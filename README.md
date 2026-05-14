@@ -56,7 +56,7 @@ preventing cascade failures and reducing unnecessary network traffic.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/geotrack.git
+git clone https://github.com/Parzeval8/geotrack.git
 cd geotrack
 ```
 
