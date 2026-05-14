@@ -10,6 +10,7 @@ from drf_spectacular.types import OpenApiTypes
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Car
 from .serializers import CarSerializer, CarProximitySerializer
+from django.shortcuts import render
 
 logger = logging.getLogger(__name__)
 
@@ -156,3 +157,7 @@ class CarViewSet(viewsets.ModelViewSet):
 
         serializer = CarProximitySerializer(cars, many=True)
         return Response(serializer.data)
+    
+def map_view(request):
+    """Renders the fleet dashboard with Leaflet map."""
+    return render(request, 'fleet/map.html')

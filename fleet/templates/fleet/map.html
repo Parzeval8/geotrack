@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTrack — Dashboard</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        body { background: #f8f9fa; }
+        #map { height: 70vh; border-radius: 8px; }
+        .stat-card { border-left: 4px solid; }
+        .stat-total { border-color: #0d6efd; }
+        .stat-working { border-color: #198754; }
+        .stat-broken { border-color: #dc3545; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-dark px-4">
+    <span class="navbar-brand fw-bold">
+        <i class="bi bi-broadcast-pin me-2"></i>GeoTrack — Dashboard
+    </span>
+    <span class="text-secondary small" id="last-update">Loading...</span>
+</nav>
+
+<!-- Stats -->
+<div class="container-fluid mt-4 px-4">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card stat-total shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <i class="bi bi-car-front fs-1 text-primary"></i>
+                    <div>
+                        <div class="fs-2 fw-bold text-primary" id="total">—</div>
+                        <div class="text-muted small text-uppercase">Total Vehicles</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card stat-working shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <i class="bi bi-check-circle fs-1 text-success"></i>
+                    <div>
+                        <div class="fs-2 fw-bold text-success" id="working">—</div>
+                        <div class="text-muted small text-uppercase">Working</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card stat-broken shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                    <div>
+                        <div class="fs-2 fw-bold text-danger" id="broken">—</div>
+                        <div class="text-muted small text-uppercase">With Problem</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">
+                <i class="bi bi-map me-2"></i>Live Fleet Map — Santa Catarina
+            </span>
+            <div class="d-flex gap-3 small">
+                <span><span class="badge bg-success">●</span> Working</span>
+                <span><span class="badge bg-danger">●</span> Problem</span>
+            </div>
+        </div>
+        <div class="card-body p-2">
+            <div id="map"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Initialize map centered on Santa Catarina
+    const map = L.map('map').setView([-27.5954, -48.5480], 7);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO'
+    }).addTo(map);
+
+    const markers = {};
+
+    const workingIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:14px;height:14px;background:#198754;border:2px solid #fff;border-radius:50%;box-shadow:0 0 6px rgba(25,135,84,0.8);"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+    });
+
+    const brokenIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:14px;height:14px;background:#dc3545;border:2px solid #fff;border-radius:50%;box-shadow:0 0 6px rgba(220,53,69,0.8);"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+    });
+
+    async function updateFleet() {
+        try {
+            const response = await fetch('/api/cars/');
+            const cars = await response.json();
+
+            let workingCount = 0;
+            let brokenCount = 0;
+
+            cars.forEach(car => {
+                const isWorking = car.status === 'working';
+                const icon = isWorking ? workingIcon : brokenIcon;
+                const weather = car.weather
+                    ? `🌡 ${car.weather.temperature}°C &nbsp;💧 ${car.weather.humidity}%`
+                    : 'Weather unavailable';
+
+                const popup = `
+                    <div style="min-width:180px;font-family:sans-serif;">
+                        <strong>${car.plate}</strong><br>
+                        ${car.brand} ${car.model} (${car.year})<br>
+                        <i class="bi bi-geo-alt"></i> ${car.city}<br>
+                        ${isWorking
+                            ? '<span class="badge bg-success">Working</span>'
+                            : '<span class="badge bg-danger">Problem</span>'}
+                        <br><small class="text-muted">${weather}</small>
+                    </div>
+                `;
+
+                if (markers[car.id]) {
+                    markers[car.id].setLatLng([car.latitude, car.longitude]);
+                    markers[car.id].setIcon(icon);
+                    markers[car.id].setPopupContent(popup);
+                } else {
+                    markers[car.id] = L.marker([car.latitude, car.longitude], { icon })
+                        .addTo(map)
+                        .bindPopup(popup);
+                }
+
+                if (isWorking) workingCount++;
+                else brokenCount++;
+            });
+
+            document.getElementById('total').textContent = cars.length;
+            document.getElementById('working').textContent = workingCount;
+            document.getElementById('broken').textContent = brokenCount;
+            document.getElementById('last-update').textContent =
+                `Last update: ${new Date().toLocaleTimeString()}`;
+
+        } catch (error) {
+            console.error('Failed to fetch fleet data:', error);
+        }
+    }
+
+    updateFleet();
+    setInterval(updateFleet, 30000);
+</script>
+
+</body>
+</html>

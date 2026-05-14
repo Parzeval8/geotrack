@@ -4,6 +4,7 @@ from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
+from fleet.views import map_view
 
 urlpatterns = [
     # Django admin panel
@@ -17,4 +18,7 @@ urlpatterns = [
 
     # Fleet app endpoints
     path('api/', include('fleet.urls')),
+
+    # Dashboard — accessible at root
+    path('', map_view, name='dashboard'),
 ]
