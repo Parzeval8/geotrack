@@ -27,7 +27,7 @@ class Car(models.Model):
 
     # Geographic position stored as a PostGIS point (longitude, latitude)
     # srid=4326 is the standard GPS coordinate system (WGS84)
-    location = models.PointField(srid=4326)
+    location = models.PointField(srid=4326, geography=True)
 
     # City name for human-readable reference
     city = models.CharField(max_length=100)

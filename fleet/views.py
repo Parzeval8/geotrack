@@ -141,8 +141,10 @@ class CarViewSet(viewsets.ModelViewSet):
         # Query cars within radius using PostGIS spatial index
         # D(km=radius_km) creates a Distance object that PostGIS understands
         cars = (
-            Car.objects.filter(location__dwithin=(reference_point, D(km=radius_km)))
-            .annotate(distance=Distance('location', reference_point))
+            Car.objects.filter(
+                location__dwithin=(reference_point, D(km=radius_km))
+            )
+            .annotate(distance=Distance('location', reference_point, spherical=True))
             .select_related('weather')
             .order_by('distance')
         )

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -113,3 +114,12 @@ CELERY_TIMEZONE = 'America/Sao_Paulo'
 # Simulation
 # Controls how often the background task updates vehicle positions
 SIMULATION_INTERVAL_SECONDS = int(os.environ.get('SIMULATION_INTERVAL_SECONDS', 30))
+
+# Periodic tasks schedule
+# simulate_fleet runs every SIMULATION_INTERVAL_SECONDS seconds
+CELERY_BEAT_SCHEDULE = {
+    'simulate-fleet': {
+        'task': 'fleet.tasks.simulate_fleet',
+        'schedule': SIMULATION_INTERVAL_SECONDS,
+    },
+}

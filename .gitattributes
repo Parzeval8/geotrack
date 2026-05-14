@@ -1,0 +1,8 @@
+# Force shell scripts to use LF line endings in all environments
+*.sh text eol=lf
+
+# Python files use LF
+*.py text eol=lf
+
+# Other files auto-detect
+* text=auto

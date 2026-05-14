@@ -27,10 +27,7 @@ services:
 
   web:
     build: .
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py seed_cars &&
-             python manage.py runserver 0.0.0.0:8000"
+    entrypoint: ["sh", "entrypoint.sh"]
     volumes:
       - .:/app
     ports:
@@ -45,7 +42,7 @@ services:
 
   celery_worker:
     build: .
-    command: celery -A geotrack worker --loglevel=info
+    entrypoint: ["sh", "entrypoint-worker.sh"]
     volumes:
       - .:/app
     env_file:
@@ -55,10 +52,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      web:
+        condition: service_started
 
   celery_beat:
     build: .
-    command: celery -A geotrack beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    entrypoint: ["sh", "entrypoint-beat.sh"]
     volumes:
       - .:/app
     env_file:
@@ -68,6 +67,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      web:
+        condition: service_started
 
 volumes:
   postgres_data:
